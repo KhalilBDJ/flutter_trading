@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-
 class User {
   final String username;
   final String password;
+  double balance;
 
-  User(this.username, this.password);
+  User(this.username, this.password, this.balance);
 }
 
 class UserProvider with ChangeNotifier {
@@ -21,4 +21,12 @@ class UserProvider with ChangeNotifier {
     _user = null;
     notifyListeners();
   }
+
+  void updateBalance(double amount) {
+    if (_user != null) {
+      _user!.balance += amount;
+      notifyListeners();
+    }
+  }
 }
+

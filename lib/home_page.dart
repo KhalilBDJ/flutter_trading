@@ -12,23 +12,48 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   double? soldeInitial = 1000.0;
   int _selectedIndex = 0;
-  List<Stock> stocks = [
-    Stock(name: "Tesla", category: "Automobile", quantity: 5),
-    Stock(name: "McDonald's", category: "Restauration", quantity: 3),
-  ];
+  final TextEditingController _amountController = TextEditingController();
 
-  static List<Widget> _widgetOptions(BuildContext context) => <Widget>[
+  static List<Widget> _widgetOptions(BuildContext context, TextEditingController amountController, _HomePageState state) => <Widget>[
     Text('Page d\'accueil'),
     Text('Cours de la bourse'),
-    Text('Profil'),
+    Column(
+      children: [
+        TextField(
+          controller: amountController,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: 'Montant à ajouter',
+          ),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final amount = double.tryParse(amountController.text);
+            if (amount != null && amount > 0) {
+              final userProvider = Provider.of<UserProvider>(context, listen: false);
+              userProvider.updateBalance(amount);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Montant ajouté : $amount')),
+              );
+              amountController.clear();
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Veuillez entrer un montant valide.')),
+              );
+            }
+          },
+          child: Text('Ajouter'),
+        ),
+      ],
+    ),
     Column(
       children: [
         ElevatedButton(
           onPressed: () {
-  final userProvider = Provider.of<UserProvider>(context, listen: false);
-  userProvider.logOut();
-  Navigator.pushReplacementNamed(context, '/');
-  },
+            final userProvider = Provider.of<UserProvider>(context, listen: false);
+            userProvider.logOut();
+            Navigator.pushReplacementNamed(context, '/');
+          },
           child: Text('Déconnexion'),
         ),
       ],
@@ -60,7 +85,7 @@ class _HomePageState extends State<HomePage> {
             ),
             SizedBox(height: 20),
             Expanded(
-              child: _widgetOptions(context).elementAt(_selectedIndex),
+              child: _widgetOptions(context, _amountController, this).elementAt(_selectedIndex),
             ),
           ],
         ),
@@ -90,13 +115,5 @@ class _HomePageState extends State<HomePage> {
         onTap: _onItemTapped,
       ),
     );
-  }
-
-  void _buyStock() {
-    // Logique d'achat d'actions
-  }
-
-  void _sellStock() {
-    // Logique de vente d'actions
   }
 }

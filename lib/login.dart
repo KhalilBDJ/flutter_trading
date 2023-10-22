@@ -27,7 +27,7 @@ class LoginPage extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 final userProvider = Provider.of<UserProvider>(context, listen: false);
-                final user = User('username', 'password');  // Remplacer par les valeurs des champs de texte
+                final user = User('username', 'password', 1000);  // Remplacer par les valeurs des champs de texte
                 userProvider.logIn(user);
                 Navigator.pushReplacementNamed(context, '/home');
               },
