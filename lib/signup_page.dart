@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'classes/User.dart';
-import 'signup_page.dart';
 
-class LoginPage extends StatelessWidget {
+class SignupPage extends StatelessWidget {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
@@ -11,7 +10,7 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Connexion'),
+        title: Text('Inscription'),
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
@@ -33,21 +32,10 @@ class LoginPage extends StatelessWidget {
               onPressed: () async {
                 final username = usernameController.text;
                 final password = passwordController.text;
-                // Vous devrez vérifier les identifiants avant de vous connecter.
                 final userProvider = Provider.of<UserProvider>(context, listen: false);
                 final user = User(username, password, 1000);
-                userProvider.logIn(user);
+                userProvider.logIn(user);  // Utilisez la même méthode logIn pour insérer l'utilisateur dans la base de données.
                 Navigator.pushReplacementNamed(context, '/home');
-              },
-              child: Text('Connexion'),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => SignupPage()),
-                );
               },
               child: Text('S\'inscrire'),
             ),
