@@ -10,11 +10,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  double? soldeInitial = 1000.0;
   int _selectedIndex = 0;
   final TextEditingController _amountController = TextEditingController();
 
-  static List<Widget> _widgetOptions(BuildContext context, TextEditingController amountController, _HomePageState state) => <Widget>[
+  static List<Widget> _widgetOptions(BuildContext context, TextEditingController amountController) => <Widget>[
     Text('Page d\'accueil'),
     Text('Cours de la bourse'),
     Column(
@@ -76,16 +75,21 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Text(
-              'Solde actuel: \$${soldeInitial?.toStringAsFixed(2)}',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+            Consumer<UserProvider>(
+              builder: (context, userProvider, child) {
+                final balance = userProvider.user?.balance.toStringAsFixed(2) ?? '0.00';
+                return Text(
+                  'Solde actuel: \$$balance',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                );
+              },
             ),
             SizedBox(height: 20),
             Expanded(
-              child: _widgetOptions(context, _amountController, this).elementAt(_selectedIndex),
+              child: _widgetOptions(context, _amountController).elementAt(_selectedIndex),
             ),
           ],
         ),
