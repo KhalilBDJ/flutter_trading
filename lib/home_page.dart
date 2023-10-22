@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'classes/stock.dart';
+import 'classes/User.dart';
+import 'login.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -14,11 +17,22 @@ class _HomePageState extends State<HomePage> {
     Stock(name: "McDonald's", category: "Restauration", quantity: 3),
   ];
 
-  static List<Widget> _widgetOptions = <Widget>[
+  static List<Widget> _widgetOptions(BuildContext context) => <Widget>[
     Text('Page d\'accueil'),
     Text('Cours de la bourse'),
     Text('Profil'),
-    Text('Réglages'),
+    Column(
+      children: [
+        ElevatedButton(
+          onPressed: () {
+  final userProvider = Provider.of<UserProvider>(context, listen: false);
+  userProvider.logOut();
+  Navigator.pushReplacementNamed(context, '/');
+  },
+          child: Text('Déconnexion'),
+        ),
+      ],
+    ),
   ];
 
   void _onItemTapped(int index) {
@@ -46,7 +60,7 @@ class _HomePageState extends State<HomePage> {
             ),
             SizedBox(height: 20),
             Expanded(
-              child: _widgetOptions.elementAt(_selectedIndex),
+              child: _widgetOptions(context).elementAt(_selectedIndex),
             ),
           ],
         ),
@@ -77,6 +91,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
   void _buyStock() {
     // Logique d'achat d'actions
   }
@@ -85,6 +100,3 @@ class _HomePageState extends State<HomePage> {
     // Logique de vente d'actions
   }
 }
-
-
-

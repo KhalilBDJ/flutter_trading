@@ -12,16 +12,19 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: Consumer<UserProvider>(
-        builder: (context, userProvider, child) {
-          if (userProvider.user == null) {
-            return LoginPage();
-          } else {
-            return HomePage();
-          }
-        },
-      ),
+      initialRoute: '/',  // Définir la route initiale
+      routes: {
+        '/': (context) => Consumer<UserProvider>(
+          builder: (context, userProvider, child) {
+            if (userProvider.user == null) {
+              return LoginPage();
+            } else {
+              return HomePage();
+            }
+          },
+        ),
+        '/home': (context) => HomePage(),  // Définir la route '/home' pour HomePage
+      },
     );
   }
 }
-
