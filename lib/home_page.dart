@@ -31,7 +31,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Gestion de Portefeuille'),
+        title: Text('Wallet'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
