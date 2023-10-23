@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'classes/User.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'InitialPage.dart';
 import 'home_page.dart';
-import 'login.dart';
 
 class MyApp extends StatelessWidget {
   @override
@@ -12,19 +11,27 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      initialRoute: '/',  // Définir la route initiale
+      initialRoute: '/',
       routes: {
-        '/': (context) => Consumer<UserProvider>(
-          builder: (context, userProvider, child) {
-            if (userProvider.user == null) {
-              return LoginPage();
-            } else {
-              return HomePage();
+        '/': (context) => FutureBuilder<bool>(
+          future: _checkInitialLaunch(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return CircularProgressIndicator();
             }
+            if (snapshot.data == true) {
+              return InitialPage();
+            }
+            return HomePage();
           },
         ),
-        '/home': (context) => HomePage(),  // Définir la route '/home' pour HomePage
+        '/home': (context) => HomePage(),
       },
     );
+  }
+
+  Future<bool> _checkInitialLaunch() async {
+    final prefs = await SharedPreferences.getInstance();
+    return !prefs.containsKey('initialized');
   }
 }
