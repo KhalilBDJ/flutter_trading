@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class HomePage extends StatefulWidget {
   @override
@@ -10,11 +12,18 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   double balance = 0.0;
   final TextEditingController _amountController = TextEditingController();
+  final String apiKey = '1TO1GFCDP5UW238V';  // Remplacez par votre clé API
+  final List<String> symbols = [
+    'AI.PA', 'AIR.PA', 'ALO.PA', 'MT.AS', 'CS.PA',
+    //... Ajoutez plus de symboles si nécessaire
+  ];
+  Map<String, double> stockPrices = {};
 
   @override
   void initState() {
     super.initState();
     _loadInitialData();
+    _fetchStockPrices();
   }
 
   Future<void> _loadInitialData() async {
@@ -24,15 +33,44 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  static List<Widget> _widgetOptions(
-      BuildContext context, TextEditingController amountController, double balance, Function updateBalance) {
+  Future<void> _fetchStockPrices() async {
+    for (String symbol in symbols) {
+      final response = await http.get(
+        Uri.parse('https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=$symbol&apikey=$apiKey'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['Global Quote'] != null) {
+          final price = double.parse(data['Global Quote']['05. price']);
+          setState(() {
+            stockPrices[symbol] = price;
+          });
+        }
+      }
+    }
+  }
+
+  List<Widget> _widgetOptions(BuildContext context) {
     return <Widget>[
-      Text('Cours des entreprises les plus côtées'),
+      stockPrices.isEmpty
+          ? CircularProgressIndicator()
+          : ListView.builder(
+        itemCount: stockPrices.length,
+        itemBuilder: (context, index) {
+          final symbol = stockPrices.keys.elementAt(index);
+          final price = stockPrices[symbol];
+          return ListTile(
+            title: Text(symbol),
+            trailing: Text('\$${price?.toStringAsFixed(2)}'),
+          );
+        },
+      ),
       Text('Cours des actions achetées'),
       Column(
         children: [
           TextField(
-            controller: amountController,
+            controller: _amountController,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
               labelText: 'Montant à ajouter',
@@ -40,13 +78,13 @@ class _HomePageState extends State<HomePage> {
           ),
           ElevatedButton(
             onPressed: () {
-              final amount = double.tryParse(amountController.text);
+              final amount = double.tryParse(_amountController.text);
               if (amount != null && amount > 0) {
-                updateBalance(amount);
+                _updateBalance(amount);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Montant ajouté : $amount')),
                 );
-                amountController.clear();
+                _amountController.clear();
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Veuillez entrer un montant valide.')),
@@ -95,35 +133,35 @@ class _HomePageState extends State<HomePage> {
             ),
             SizedBox(height: 20),
             Expanded(
-              child: _widgetOptions(context, _amountController, balance, _updateBalance).elementAt(_selectedIndex),
+              child: _widgetOptions(context).elementAt(_selectedIndex),
             ),
           ],
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: 'Accueil',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.show_chart),
-          label: 'Bourse',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profil',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.settings),
-          label: 'Réglages',
-        ),
-      ],
-      currentIndex: _selectedIndex,
-      selectedItemColor: Colors.amber[800],
-      unselectedItemColor: Colors.grey,
-      onTap: _onItemTapped,
-    ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Accueil',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.show_chart),
+            label: 'Bourse',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profil',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Réglages',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.amber[800],
+        unselectedItemColor: Colors.grey,
+        onTap: _onItemTapped,
+      ),
     );
   }
 }

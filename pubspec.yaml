@@ -34,6 +34,8 @@ dependencies:
   flutter_credit_card: ^3.0.7
   sqflite:
   shared_preferences:
+  http: ^1.1.0
+
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
