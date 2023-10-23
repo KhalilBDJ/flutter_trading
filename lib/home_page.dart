@@ -27,8 +27,8 @@ class _HomePageState extends State<HomePage> {
   static List<Widget> _widgetOptions(
       BuildContext context, TextEditingController amountController, double balance, Function updateBalance) {
     return <Widget>[
-      Text('Page d\'accueil'),
-      Text('Cours de la bourse'),
+      Text('Cours des entreprises les plus côtées'),
+      Text('Cours des actions achetées'),
       Column(
         children: [
           TextField(
@@ -57,7 +57,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      Text('Réglages'),
+      Text('Page de personnalisation du thème'),
     ];
   }
 
@@ -102,28 +102,28 @@ class _HomePageState extends State<HomePage> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Accueil',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.show_chart),
-            label: 'Bourse',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profil',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Réglages',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.amber[800],
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
-      ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home),
+          label: 'Accueil',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.show_chart),
+          label: 'Bourse',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person),
+          label: 'Profil',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.settings),
+          label: 'Réglages',
+        ),
+      ],
+      currentIndex: _selectedIndex,
+      selectedItemColor: Colors.amber[800],
+      unselectedItemColor: Colors.grey,
+      onTap: _onItemTapped,
+    ),
     );
   }
 }
