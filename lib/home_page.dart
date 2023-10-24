@@ -12,18 +12,35 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   double balance = 0.0;
   final TextEditingController _amountController = TextEditingController();
-  final String apiKey = '1TO1GFCDP5UW238V';  // Remplacez par votre clé API
+  final String apiKey = '1TO1GFCDP5UW238V';
   final List<String> symbols = [
     'AI.PA', 'AIR.PA', 'ALO.PA', 'MT.AS', 'CS.PA',
-    //... Ajoutez plus de symboles si nécessaire
   ];
   Map<String, double> stockPrices = {};
+  final Map<String, String> symbolToName = {
+    'AI.PA': 'AIR LIQUIDE',
+    'AIR.PA': 'AIRBUS',
+    'ALO.PA': 'ALSTOM',
+    'MT.AS': 'ARCELORMITTAL SA',
+    'CS.PA': 'AXA',
+  };
+  Map<String, int> purchasedStocks = {};  // Nouveau: Pour stocker les actions achetées
+
 
   @override
   void initState() {
     super.initState();
     _loadInitialData();
     _fetchStockPrices();
+    _loadPurchasedStocks();
+  }
+
+  Future<void> _loadPurchasedStocks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString('purchased_stocks');
+    if (data != null) {
+      purchasedStocks = Map<String, int>.from(json.decode(data));
+    }
   }
 
   Future<void> _loadInitialData() async {
@@ -51,28 +68,116 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _buyStock(String symbol, double price) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final TextEditingController quantityController = TextEditingController();
+        return AlertDialog(
+          title: Text('Acheter des actions'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Prix par action: \$${price.toStringAsFixed(2)}'),
+              TextField(
+                controller: quantityController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(labelText: 'Quantité'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                final quantity = int.tryParse(quantityController.text);
+                if (quantity != null && quantity > 0) {
+                  final totalCost = price * quantity;
+                  if (balance >= totalCost) {
+                    _updateBalance(totalCost, false);  // Soustraire de l'argent pour l'achat d'actions
+                    _updatePurchasedStocks(symbol, quantity);  // Nouveau: Mettre à jour les actions achetées
+                    Navigator.of(context).pop();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Solde insuffisant.')),
+                    );
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Veuillez entrer une quantité valide.')),
+                  );
+                }
+              },
+              child: Text('Acheter'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Annuler'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _updatePurchasedStocks(String symbol, int quantity) {
+    setState(() {
+      purchasedStocks.update(symbol, (value) => value + quantity,
+          ifAbsent: () => quantity);
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString('purchased_stocks', json.encode(purchasedStocks));
+    });
+  }
+
   List<Widget> _widgetOptions(BuildContext context) {
     return <Widget>[
       stockPrices.isEmpty
-          ? CircularProgressIndicator()
+          ? const CircularProgressIndicator()
           : ListView.builder(
         itemCount: stockPrices.length,
         itemBuilder: (context, index) {
           final symbol = stockPrices.keys.elementAt(index);
           final price = stockPrices[symbol];
+          final companyName = symbolToName[symbol] ?? symbol;
           return ListTile(
-            title: Text(symbol),
-            trailing: Text('\$${price?.toStringAsFixed(2)}'),
+            title: Text(companyName),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('\$${price?.toStringAsFixed(2)}'),
+                IconButton(
+                  icon: Icon(Icons.shopping_cart),
+                  onPressed: () => _buyStock(symbol, price!),
+                ),
+              ],
+            ),
           );
         },
       ),
-      Text('Cours des actions achetées'),
+      purchasedStocks.isEmpty
+          ? const Text('Aucune action achetée.')
+          : ListView.builder(
+        itemCount: purchasedStocks.length,
+        itemBuilder: (context, index) {
+          final symbol = purchasedStocks.keys.elementAt(index);
+          final quantity = purchasedStocks[symbol];
+          final companyName = symbolToName[symbol] ?? symbol;  // Utilisez la carte pour obtenir le nom de l'entreprise
+          // Vous pouvez utiliser l'API pour obtenir le prix actuel de l'action ici
+          // et l'afficher à côté de la quantité d'actions achetées.
+          return ListTile(
+            title: Text('$companyName ($quantity)'),  // Affichez le nom de l'entreprise ici
+            // trailing: Text('\$${price?.toStringAsFixed(2)}'),  // Prix actuel de l'action
+          );
+        },
+      ),
+
+      //const Text('Cours des actions achetées'),
       Column(
         children: [
           TextField(
             controller: _amountController,
             keyboardType: TextInputType.number,
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               labelText: 'Montant à ajouter',
             ),
           ),
@@ -80,39 +185,39 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {
               final amount = double.tryParse(_amountController.text);
               if (amount != null && amount > 0) {
-                _updateBalance(amount);
+                _updateBalance(amount, true);  // Ajouter de l'argent
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Montant ajouté : $amount')),
                 );
                 _amountController.clear();
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Veuillez entrer un montant valide.')),
+                  const SnackBar(content: Text('Veuillez entrer un montant valide.')),
                 );
               }
             },
-            child: Text('Ajouter'),
+            child: const Text('Ajouter'),
           ),
         ],
       ),
-      Text('Page de personnalisation du thème'),
+      const Text('Page de personnalisation du thème'),
     ];
   }
-
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
 
-  void _updateBalance(double amount) {
+  void _updateBalance(double amount, bool isAdding) {
     setState(() {
-      balance += amount;
+      balance = isAdding ? balance + amount : balance - amount;
     });
     SharedPreferences.getInstance().then((prefs) {
       prefs.setDouble('amount', balance);
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
