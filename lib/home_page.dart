@@ -24,7 +24,7 @@ class _HomePageState extends State<HomePage> {
     'MT.AS': 'ARCELORMITTAL SA',
     'CS.PA': 'AXA',
   };
-  Map<String, int> purchasedStocks = {};  // Nouveau: Pour stocker les actions achetées
+  Map<String, Map<String, dynamic>> purchasedStocks = {};  // Ligne modifiée
 
 
   @override
@@ -39,7 +39,7 @@ class _HomePageState extends State<HomePage> {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString('purchased_stocks');
     if (data != null) {
-      purchasedStocks = Map<String, int>.from(json.decode(data));
+      purchasedStocks = Map<String, Map<String, dynamic>>.from(json.decode(data));  // Ligne modifiée
     }
   }
 
@@ -94,7 +94,7 @@ class _HomePageState extends State<HomePage> {
                   final totalCost = price * quantity;
                   if (balance >= totalCost) {
                     _updateBalance(totalCost, false);  // Soustraire de l'argent pour l'achat d'actions
-                    _updatePurchasedStocks(symbol, quantity);  // Nouveau: Mettre à jour les actions achetées
+                    _updatePurchasedStocks(symbol, quantity, price);  // Modifié ici : ajout de l'argument prix
                     Navigator.of(context).pop();
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -119,15 +119,22 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _updatePurchasedStocks(String symbol, int quantity) {
+  void _updatePurchasedStocks(String symbol, int quantity, double price) {  // Méthode ajoutée/modifiée
     setState(() {
-      purchasedStocks.update(symbol, (value) => value + quantity,
-          ifAbsent: () => quantity);
+      final existingQuantity = (purchasedStocks[symbol] != null)
+          ? purchasedStocks[symbol]!['quantity']
+          : 0;
+      purchasedStocks[symbol] = {
+        'quantity': existingQuantity + quantity,
+        'purchasePrice': price,
+      };
     });
     SharedPreferences.getInstance().then((prefs) {
       prefs.setString('purchased_stocks', json.encode(purchasedStocks));
     });
   }
+
+
 
   List<Widget> _widgetOptions(BuildContext context) {
     return <Widget>[
@@ -160,13 +167,20 @@ class _HomePageState extends State<HomePage> {
         itemCount: purchasedStocks.length,
         itemBuilder: (context, index) {
           final symbol = purchasedStocks.keys.elementAt(index);
-          final quantity = purchasedStocks[symbol];
-          final companyName = symbolToName[symbol] ?? symbol;  // Utilisez la carte pour obtenir le nom de l'entreprise
-          // Vous pouvez utiliser l'API pour obtenir le prix actuel de l'action ici
-          // et l'afficher à côté de la quantité d'actions achetées.
+          final quantity = purchasedStocks[symbol]!['quantity'];
+          final purchasePrice = purchasedStocks[symbol]!['purchasePrice'];
+          final currentPrice = stockPrices[symbol];
+          final priceDifference = (currentPrice! - purchasePrice) * quantity;
+          final priceDifferenceString = priceDifference > 0 ? '+${priceDifference.toStringAsFixed(2)}' : priceDifference.toStringAsFixed(2);
+          final color = priceDifference > 0 ? Colors.green : Colors.red;
+          final companyName = symbolToName[symbol] ?? symbol;
+
           return ListTile(
-            title: Text('$companyName ($quantity)'),  // Affichez le nom de l'entreprise ici
-            // trailing: Text('\$${price?.toStringAsFixed(2)}'),  // Prix actuel de l'action
+            title: Text('$companyName ($quantity)'),
+            trailing: Text(
+              '(\$${currentPrice?.toStringAsFixed(2)}) ($priceDifferenceString)',
+              style: TextStyle(color: color),
+            ),
           );
         },
       ),
