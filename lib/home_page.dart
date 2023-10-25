@@ -167,21 +167,30 @@ class _HomePageState extends State<HomePage> {
         itemCount: purchasedStocks.length,
         itemBuilder: (context, index) {
           final symbol = purchasedStocks.keys.elementAt(index);
-          final quantity = purchasedStocks[symbol]!['quantity'];
-          final purchasePrice = purchasedStocks[symbol]!['purchasePrice'];
+          final stockInfo = purchasedStocks[symbol];
           final currentPrice = stockPrices[symbol];
-          final priceDifference = (currentPrice! - purchasePrice) * quantity;
-          final priceDifferenceString = priceDifference > 0 ? '+${priceDifference.toStringAsFixed(2)}' : priceDifference.toStringAsFixed(2);
-          final color = priceDifference > 0 ? Colors.green : Colors.red;
-          final companyName = symbolToName[symbol] ?? symbol;
 
-          return ListTile(
-            title: Text('$companyName ($quantity)'),
-            trailing: Text(
-              '(\$${currentPrice?.toStringAsFixed(2)}) ($priceDifferenceString)',
-              style: TextStyle(color: color),
-            ),
-          );
+          if (stockInfo != null && currentPrice != null) {
+            final quantity = stockInfo['quantity'];
+            final purchasePrice = stockInfo['purchasePrice'];
+            final priceDifference = (currentPrice - purchasePrice) * quantity;
+            final priceDifferenceString = priceDifference > 0 ? '+${priceDifference.toStringAsFixed(2)}' : priceDifference.toStringAsFixed(2);
+            final color = priceDifference > 0 ? Colors.green : Colors.red;
+            final companyName = symbolToName[symbol] ?? symbol;
+
+            return ListTile(
+              title: Text('$companyName ($quantity)'),
+              trailing: Text(
+                '(\$${currentPrice.toStringAsFixed(2)}) ($priceDifferenceString)',
+                style: TextStyle(color: color),
+              ),
+            );
+          } else {
+            // Handle the case when stockInfo or currentPrice is null
+            return ListTile(
+              title: Text('Information non disponible'),
+            );
+          }
         },
       ),
 
