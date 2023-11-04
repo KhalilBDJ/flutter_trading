@@ -74,7 +74,7 @@ class _HomePageState extends State<HomePage> {
       builder: (context) {
         final TextEditingController quantityController = TextEditingController();
         return AlertDialog(
-          title: Text('Acheter des actions'),
+          title: const Text('Acheter des actions'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -82,7 +82,7 @@ class _HomePageState extends State<HomePage> {
               TextField(
                 controller: quantityController,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Quantité'),
+                decoration: const InputDecoration(labelText: 'Quantité'),
               ),
             ],
           ),
@@ -94,24 +94,24 @@ class _HomePageState extends State<HomePage> {
                   final totalCost = price * quantity;
                   if (balance >= totalCost) {
                     _updateBalance(totalCost, false);  // Soustraire de l'argent pour l'achat d'actions
-                    _updatePurchasedStocks(symbol, quantity, price);  // Modifié ici : ajout de l'argument prix
+                    _updatePurchasedStocks(symbol, quantity, price);  //  ajout de l'argument prix
                     Navigator.of(context).pop();
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Solde insuffisant.')),
+                      const SnackBar(content: Text('Solde insuffisant.')),
                     );
                   }
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Veuillez entrer une quantité valide.')),
+                    const SnackBar(content: Text('Veuillez entrer une quantité valide.')),
                   );
                 }
               },
-              child: Text('Acheter'),
+              child: const Text('Acheter'),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('Annuler'),
+              child: const Text('Annuler'),
             ),
           ],
         );
@@ -153,7 +153,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Text('\$${price?.toStringAsFixed(2)}'),
                 IconButton(
-                  icon: Icon(Icons.shopping_cart),
+                  icon: const Icon(Icons.shopping_cart),
                   onPressed: () => _buyStock(symbol, price!),
                 ),
               ],
@@ -187,7 +187,7 @@ class _HomePageState extends State<HomePage> {
             );
           } else {
             // Handle the case when stockInfo or currentPrice is null
-            return ListTile(
+            return const ListTile(
               title: Text('Information non disponible'),
             );
           }
@@ -223,7 +223,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      const Text('Page de personnalisation du thème'),
+      const Text('Page de personnalisation du thème', style: TextStyle(color: Colors.green), ),
     ];
   }
   void _onItemTapped(int index) {
@@ -245,8 +245,10 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text('Wallet'),
+        backgroundColor: Colors.grey[900],
+        title: const Text('Tradet', style: TextStyle(color: Colors.green)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -257,6 +259,7 @@ class _HomePageState extends State<HomePage> {
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 20),
@@ -267,6 +270,7 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.grey[900],
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -286,8 +290,8 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.amber[800],
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: Colors.green[300],
+        unselectedItemColor: Colors.green[700],
         onTap: _onItemTapped,
       ),
     );
