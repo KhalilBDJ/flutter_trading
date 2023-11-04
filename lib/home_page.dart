@@ -254,12 +254,12 @@ class _HomePageState extends State<HomePage> {
           children: [
             Text(
               'Solde actuel: \$${balance.toStringAsFixed(2)}',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Expanded(
               child: _widgetOptions(context).elementAt(_selectedIndex),
             ),
