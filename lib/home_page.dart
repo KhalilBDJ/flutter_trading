@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:syncfusion_flutter_charts/charts.dart';
+import 'classes/CandleData.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,14 +19,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   final String apiKey = '1TO1GFCDP5UW238V';
   late AnimationController _animationController;
   late Animation<double> _animation;
+  String selectedTimeRange = '1W'; // Par défaut une semaine
+  List<CandleData> candleData = [];
 
-  final List<String> symbols = [
-    'AI.PA',
-    'AIR.PA',
-    'ALO.PA',
-    'MT.AS',
-    'CS.PA',
-  ];
   Map<String, double> stockPrices = {};
   final Map<String, String> symbolToName = {
     'AI.PA': 'AIR LIQUIDE',
@@ -41,6 +38,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _loadInitialData();
     _fetchStockPrices();
     _loadPurchasedStocks();
+    _loadChartData('1W');
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1000), // Durée de l'animation
@@ -69,6 +67,86 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
+  Future<void> _loadChartData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Tentative de chargement des données de série temporelle depuis le cache
+    final cachedTimeSeriesData = prefs.getString('timeSeriesData');
+
+    if (cachedTimeSeriesData != null) {
+      // Les données existent dans le cache, on les décode
+      final timeSeriesData = json.decode(cachedTimeSeriesData) as Map<String, dynamic>;
+
+      // Préparation de la structure des données pour le graphique
+      List<CandleData> candleData = [];
+
+      // Ici, nous itérons à travers les données de séries temporelles
+      // en supposant que 'timeSeriesData' est structurée avec des symboles d'actions comme clés
+      // et des listes de données historiques comme valeurs
+      for (String symbol in timeSeriesData.keys) {
+        final symbolData = timeSeriesData[symbol];
+
+        // Convertir les données en une forme utilisable par le graphique
+        // Nous supposons que 'ChartData' est une classe qui représente les données de votre graphique
+        for (String date in symbolData.keys) {
+          final dayData = symbolData[date];
+          final open = double.parse(dayData['1. open']);
+          final high = double.parse(dayData['2. high']);
+          final low = double.parse(dayData['3. low']);
+          final close = double.parse(dayData['4. close']);
+          // Création d'une instance de ChartData pour chaque jour
+          candleData.add(CandleData(date, open, high, low, close));
+        }
+      }
+
+      // Mettre à jour l'état pour afficher les données dans le graphique
+      setState(() {
+        // Vous pouvez avoir un état 'candleData' défini dans votre Stateful Widget
+        // pour stocker les données et ensuite les utiliser dans un Widget graphique
+        this.candleData = candleData;
+      });
+    } else {
+      // S'il n'y a pas de données en cache, vous pourriez vouloir appeler une autre méthode
+      // pour charger les données depuis une source externe ou afficher un message à l'utilisateur
+      // Par exemple :
+      // _fetchStockPrices();
+    }
+  }
+
+  SfCartesianChart _buildCandleChart() {
+    return SfCartesianChart(
+      series: <CandleSeries>[
+        CandleSeries<CandleData, String>(
+          dataSource: candleData,
+          xValueMapper: (CandleData sales, _) => sales.date,
+          lowValueMapper: (CandleData sales, _) => sales.low,
+          highValueMapper: (CandleData sales, _) => sales.high,
+          openValueMapper: (CandleData sales, _) => sales.open,
+          closeValueMapper: (CandleData sales, _) => sales.close,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimeRangeSelector() {
+    return DropdownButton<String>(
+      value: selectedTimeRange,
+      items: <String>['1D', '1W', '1M', '3M', '6M', '1Y', '3Y']
+          .map<DropdownMenuItem<String>>((String value) {
+        return DropdownMenuItem<String>(
+          value: value,
+          child: Text(value),
+        );
+      }).toList(),
+      onChanged: (String? newValue) {
+        setState(() {
+          selectedTimeRange = newValue!;
+          _loadChartData(selectedTimeRange);
+        });
+      },
+    );
+  }
+
   Future<void> _loadInitialData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -77,23 +155,56 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Future<void> _fetchStockPrices() async {
-    for (String symbol in symbols) {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Vérifiez si la date du dernier fetch est aujourd'hui
+    final lastFetchDate = prefs.getString('lastFetchDate');
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+
+    if (lastFetchDate != null && lastFetchDate == today) {
+      // Chargez les données en cache au lieu de faire un nouvel appel à l'API
+      final cachedData = prefs.getString('cachedStockPrices');
+      if (cachedData != null) {
+        final data = json.decode(cachedData);
+        setState(() {
+          stockPrices = data;
+        });
+        return;
+      }
+    }
+
+    // Créez un objet pour stocker les données de la série temporelle
+    Map<String, dynamic> timeSeriesData = {};
+
+    // Si les données ne sont pas en cache ou sont périmées, faites un nouvel appel
+    for (String symbol in symbolToName.keys) {
       final response = await http.get(
         Uri.parse(
-            'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=$symbol&apikey=$apiKey'),
+            'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=$symbol&apikey=$apiKey'),
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['Global Quote'] != null) {
-          final price = double.parse(data['Global Quote']['05. price']);
-          setState(() {
-            stockPrices[symbol] = price;
-          });
+        // Obtenez les données de TIME_SERIES_DAILY pour le dernier jour de trading disponible
+        if (data['Time Series (Daily)'] != null) {
+          final latestData = data['Time Series (Daily)'][today];
+          if (latestData != null) {
+            final closePrice = double.parse(latestData['4. close']);
+            setState(() {
+              stockPrices[symbol] = closePrice;
+            });
+            // Ajoutez toutes les données de la série temporelle pour ce symbole
+            timeSeriesData[symbol] = data['Time Series (Daily)'];
+          }
         }
       }
     }
+    // Sauvegardez les nouvelles données de prix de fermeture et les données de série temporelle dans le cache
+    await prefs.setString('cachedStockPrices', json.encode(stockPrices));
+    await prefs.setString('timeSeriesData', json.encode(timeSeriesData)); // Sauvegarde des données pour les chandeliers
+    await prefs.setString('lastFetchDate', today);
   }
+
 
   void _buyStock(String symbol, double price) {
     showDialog(
@@ -233,6 +344,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           TextField(
             controller: _amountController,
             keyboardType: TextInputType.number,
+            style: TextStyle(color: Colors.white),
             decoration: const InputDecoration(
               labelText: 'Montant à ajouter',
               labelStyle: TextStyle(color: Colors.green), // Pour rendre le texte en vert
@@ -265,9 +377,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ],
       ),
-      const Text(
-        'Page de personnalisation du thème',
-        style: TextStyle(color: Colors.green),
+      _buildTimeRangeSelector(),
+      Expanded(
+        child: _buildCandleChart(),
       ),
     ];
   }
