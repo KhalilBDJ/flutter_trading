@@ -38,7 +38,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _loadInitialData();
     _fetchStockPrices();
     _loadPurchasedStocks();
-    _loadChartData('1W');
+    _loadChartData('1D', 'AI.PA');
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1000), // Durée de l'animation
@@ -67,68 +67,73 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _loadChartData() async {
+  Future<void> _loadChartData(String selectedSymbol, String selectedPeriod) async {
     final prefs = await SharedPreferences.getInstance();
-
-    // Tentative de chargement des données de série temporelle depuis le cache
-    final cachedTimeSeriesData = prefs.getString('timeSeriesData');
-
-    if (cachedTimeSeriesData != null) {
-      // Les données existent dans le cache, on les décode
-      final timeSeriesData = json.decode(cachedTimeSeriesData) as Map<String, dynamic>;
-
-      // Préparation de la structure des données pour le graphique
-      List<CandleData> candleData = [];
-
-      // Ici, nous itérons à travers les données de séries temporelles
-      // en supposant que 'timeSeriesData' est structurée avec des symboles d'actions comme clés
-      // et des listes de données historiques comme valeurs
-      for (String symbol in timeSeriesData.keys) {
-        final symbolData = timeSeriesData[symbol];
-
-        // Convertir les données en une forme utilisable par le graphique
-        // Nous supposons que 'ChartData' est une classe qui représente les données de votre graphique
-        for (String date in symbolData.keys) {
-          final dayData = symbolData[date];
-          final open = double.parse(dayData['1. open']);
-          final high = double.parse(dayData['2. high']);
-          final low = double.parse(dayData['3. low']);
-          final close = double.parse(dayData['4. close']);
-          // Création d'une instance de ChartData pour chaque jour
-          candleData.add(CandleData(date, open, high, low, close));
-        }
+    final allData = prefs.getString('allTimeSeriesData');
+    if (allData != null) {
+      final data = json.decode(allData)[selectedSymbol];
+      final endDate = DateTime.now();
+      DateTime startDate = endDate;
+      switch (selectedPeriod) {
+        case '1D':
+          startDate = endDate.subtract(Duration(days: 1));
+          break;
+        case '1W':
+          startDate = endDate.subtract(Duration(days: 7));
+          break;
+        case '1M':
+          startDate = DateTime(endDate.year, endDate.month - 1, endDate.day);
+          break;
+        case '3M':
+          startDate = DateTime(endDate.year, endDate.month - 3, endDate.day);
+          break;
+        case '6M':
+          startDate = DateTime(endDate.year, endDate.month - 6, endDate.day);
+          break;
+        case '1Y':
+          startDate = DateTime(endDate.year - 1, endDate.month, endDate.day);
+          break;
+        case '3Y':
+          startDate = DateTime(endDate.year - 3, endDate.month, endDate.day);
+          break;
       }
 
-      // Mettre à jour l'état pour afficher les données dans le graphique
-      setState(() {
-        // Vous pouvez avoir un état 'candleData' défini dans votre Stateful Widget
-        // pour stocker les données et ensuite les utiliser dans un Widget graphique
-        this.candleData = candleData;
+      List<CandleData> chartData = [];
+      data.forEach((dateString, value) {
+        final date = DateTime.parse(dateString);
+        if (date.isAfter(startDate) && date.isBefore(endDate)) {
+          final open = double.parse(value['1. open']);
+          final high = double.parse(value['2. high']);
+          final low = double.parse(value['3. low']);
+          final close = double.parse(value['4. close']);
+          chartData.add(CandleData(date, open, high, low, close));
+        }
       });
-    } else {
-      // S'il n'y a pas de données en cache, vous pourriez vouloir appeler une autre méthode
-      // pour charger les données depuis une source externe ou afficher un message à l'utilisateur
-      // Par exemple :
-      // _fetchStockPrices();
+
+      setState(() {
+        candleData = chartData;
+      });
     }
   }
 
   SfCartesianChart _buildCandleChart() {
     return SfCartesianChart(
       series: <CandleSeries>[
-        CandleSeries<CandleData, String>(
+        CandleSeries<CandleData, DateTime>(
           dataSource: candleData,
-          xValueMapper: (CandleData sales, _) => sales.date,
-          lowValueMapper: (CandleData sales, _) => sales.low,
-          highValueMapper: (CandleData sales, _) => sales.high,
-          openValueMapper: (CandleData sales, _) => sales.open,
-          closeValueMapper: (CandleData sales, _) => sales.close,
+          xValueMapper: (CandleData data, _) => data.date,
+          lowValueMapper: (CandleData data, _) => data.low,
+          highValueMapper: (CandleData data, _) => data.high,
+          openValueMapper: (CandleData data, _) => data.open,
+          closeValueMapper: (CandleData data, _) => data.close,
         ),
       ],
+      primaryXAxis: DateTimeAxis(),
+      // ... [Autres configurations du graphique si nécessaire]
     );
   }
 
-  Widget _buildTimeRangeSelector() {
+  /*Widget _buildTimeRangeSelector() {
     return DropdownButton<String>(
       value: selectedTimeRange,
       items: <String>['1D', '1W', '1M', '3M', '6M', '1Y', '3Y']
@@ -141,11 +146,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       onChanged: (String? newValue) {
         setState(() {
           selectedTimeRange = newValue!;
-          _loadChartData(selectedTimeRange);
+          _loadChartData();
         });
       },
     );
-  }
+  }*/
 
   Future<void> _loadInitialData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -156,54 +161,46 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> _fetchStockPrices() async {
     final prefs = await SharedPreferences.getInstance();
-
-    // Vérifiez si la date du dernier fetch est aujourd'hui
     final lastFetchDate = prefs.getString('lastFetchDate');
     final today = DateTime.now().toIso8601String().substring(0, 10);
-
-    if (lastFetchDate != null && lastFetchDate == today) {
-      // Chargez les données en cache au lieu de faire un nouvel appel à l'API
-      final cachedData = prefs.getString('cachedStockPrices');
+    if (lastFetchDate == today) {
+      final cachedData = prefs.getString('allTimeSeriesData');
       if (cachedData != null) {
-        final data = json.decode(cachedData);
+        final data = json.decode(cachedData) as Map<String, dynamic>;
         setState(() {
-          stockPrices = data;
+          stockPrices = data.map((key, value) => MapEntry(key, double.parse(value.toString())));
         });
         return;
       }
     }
 
-    // Créez un objet pour stocker les données de la série temporelle
-    Map<String, dynamic> timeSeriesData = {};
+    Map<String, dynamic> allTimeSeriesData = {};
 
-    // Si les données ne sont pas en cache ou sont périmées, faites un nouvel appel
     for (String symbol in symbolToName.keys) {
       final response = await http.get(
-        Uri.parse(
-            'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=$symbol&apikey=$apiKey'),
+        Uri.parse('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=$symbol&apiKey=$apiKey'),
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        // Obtenez les données de TIME_SERIES_DAILY pour le dernier jour de trading disponible
+        allTimeSeriesData[symbol] = data['Time Series (Daily)'];
         if (data['Time Series (Daily)'] != null) {
-          final latestData = data['Time Series (Daily)'][today];
-          if (latestData != null) {
-            final closePrice = double.parse(latestData['4. close']);
-            setState(() {
-              stockPrices[symbol] = closePrice;
-            });
-            // Ajoutez toutes les données de la série temporelle pour ce symbole
-            timeSeriesData[symbol] = data['Time Series (Daily)'];
-          }
+          final dailyData = data['Time Series (Daily)'];
+          final latestDate = dailyData.keys.first;
+          final latestData = dailyData[latestDate];
+          final closePrice = double.parse(latestData['4. close']);
+          setState(() {
+            stockPrices[symbol] = closePrice;
+          });
         }
       }
     }
-    // Sauvegardez les nouvelles données de prix de fermeture et les données de série temporelle dans le cache
-    await prefs.setString('cachedStockPrices', json.encode(stockPrices));
-    await prefs.setString('timeSeriesData', json.encode(timeSeriesData)); // Sauvegarde des données pour les chandeliers
+
+    await prefs.setString('allTimeSeriesData', json.encode(allTimeSeriesData));
     await prefs.setString('lastFetchDate', today);
   }
+
+
 
 
   void _buyStock(String symbol, double price) {
@@ -319,7 +316,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   final priceDifferenceString = priceDifference > 0
                       ? '+${priceDifference.toStringAsFixed(2)}'
                       : priceDifference.toStringAsFixed(2);
-                  final color = priceDifference > 0 ? Colors.green : Colors.red;
+                  final color = priceDifference >= 0 ? Colors.green : Colors.red;
                   final companyName = symbolToName[symbol] ?? symbol;
 
                   return ListTile(
@@ -330,7 +327,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ),
                   );
                 } else {
-                  // Handle the case when stockInfo or currentPrice is null
                   return const ListTile(
                     title: Text('Information non disponible'),
                   );
@@ -377,7 +373,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ],
       ),
-      _buildTimeRangeSelector(),
+      //_buildTimeRangeSelector(),
       Expanded(
         child: _buildCandleChart(),
       ),

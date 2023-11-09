@@ -1,5 +1,5 @@
 class CandleData {
-  final String date;
+  final DateTime date;
   final double open;
   final double high;
   final double low;
