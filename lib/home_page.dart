@@ -163,12 +163,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final prefs = await SharedPreferences.getInstance();
     final lastFetchDate = prefs.getString('lastFetchDate');
     final today = DateTime.now().toIso8601String().substring(0, 10);
+
     if (lastFetchDate == today) {
       final cachedData = prefs.getString('allTimeSeriesData');
       if (cachedData != null) {
-        final data = json.decode(cachedData) as Map<String, dynamic>;
+        final allData = json.decode(cachedData) as Map<String, dynamic>;
         setState(() {
-          stockPrices = data.map((key, value) => MapEntry(key, double.parse(value.toString())));
+          stockPrices = allData.map((symbol, dynamic symbolData) {
+            final dateData = symbolData as Map<String, dynamic>;
+            final latestDate = dateData.keys.first; // Assuming the first key is the latest date
+            final priceData = dateData[latestDate] as Map<String, dynamic>;
+            final closePrice = double.tryParse(priceData['4. close'].toString()) ?? 0.0;
+            return MapEntry(symbol, closePrice);
+          });
         });
         return;
       }
