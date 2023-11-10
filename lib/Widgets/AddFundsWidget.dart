@@ -1,17 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
-class AddFundsWidget extends StatelessWidget {
+class AddFundsWidget extends StatefulWidget {
   final TextEditingController amountController;
   final Function(double, bool) updateBalance;
+  Map<String, double> stockPrices = {};
 
-  const AddFundsWidget({Key? key, required this.amountController, required this.updateBalance}) : super(key: key);
+
+  AddFundsWidget({
+    Key? key,
+    required this.amountController,
+    required this.updateBalance,
+    required this.stockPrices
+  }) : super(key: key);
+
+  @override
+  _AddFundsWidgetState createState() => _AddFundsWidgetState();
+}
+
+class _AddFundsWidgetState extends State<AddFundsWidget> {
+  Map<String, Map<String, dynamic>> purchasedStocks = {};
+  double walletValue = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStockData();
+  }
+
+  Future<void> _loadStockData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final purchasedStocksData = prefs.getString('purchased_stocks');
+
+    if (purchasedStocksData != null) {
+      setState(() {
+        purchasedStocks = Map<String, Map<String, dynamic>>.from(json.decode(purchasedStocksData));
+        walletValue = _getWalletValue();
+      });
+    }
+  }
+
+  double _getWalletValue() {
+    double totalValue = 0.0;
+    purchasedStocks.forEach((symbol, stockData) {
+      final currentPrice = widget.stockPrices[symbol] ?? 0.0;
+      final quantity = stockData['quantity'] ?? 0;
+      totalValue += currentPrice * quantity;
+    });
+    return totalValue;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
+        Text(
+          'Valeur du portefeuille: \$${walletValue.toStringAsFixed(2)}',
+          style: const TextStyle(color: Colors.white, fontSize: 16.0),
+        ),
         TextField(
-          controller: amountController,
+          controller: widget.amountController,
           keyboardType: TextInputType.number,
           style: TextStyle(color: Colors.white),
           decoration: const InputDecoration(
@@ -28,20 +77,20 @@ class AddFundsWidget extends StatelessWidget {
         const SizedBox(height: 10.0),
         ElevatedButton(
           onPressed: () {
-            final amount = double.tryParse(amountController.text);
+            final amount = double.tryParse(widget.amountController.text);
             if (amount != null && amount > 0) {
-              updateBalance(amount, true);
+              widget.updateBalance(amount, true);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Montant ajouté : $amount')),
               );
-              amountController.clear();
+              widget.amountController.clear();
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Veuillez entrer un montant valide.')),
+                SnackBar(content: Text('Veuillez entrer un montant valide.')),
               );
             }
           },
-          child: const Text('Ajouter'),
+          child: Text('Ajouter'),
         ),
       ],
     );

@@ -16,18 +16,18 @@ class InitialPage extends StatelessWidget {
       Navigator.pushReplacementNamed(context, '/home');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Veuillez fournir des informations valides.')),
+        const SnackBar(content: Text('Veuillez fournir des informations valides.')),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    var spotifyTheme = ThemeData(
+    var theme = ThemeData(
       brightness: Brightness.dark, // Fond sombre
       primaryColor: Colors.black,
       hintColor: Colors.greenAccent,
-      textTheme: TextTheme(
+      textTheme: const TextTheme(
         headline1: TextStyle(fontSize: 36.0, fontWeight: FontWeight.bold, color: Colors.white),
         subtitle1: TextStyle(fontSize: 18.0, color: Colors.white),
       ),
@@ -55,31 +55,31 @@ class InitialPage extends StatelessWidget {
     );
 
     return Theme(
-      data: spotifyTheme,
+      data: theme,
       child: Scaffold(
-        appBar: AppBar(title: Text('Welcome')),
+        appBar: AppBar(title: const Text('Bienvenue dans Tradet')),
         body: Padding(
-          padding: EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Please enter your details', style: spotifyTheme.textTheme.headline1),
-              SizedBox(height: 32.0),
+              Text('Entrez vos détails', style: theme.textTheme.headline1),
+              const SizedBox(height: 32.0),
               TextField(
                 controller: nameController,
-                decoration: InputDecoration(labelText: 'Name'),
+                decoration: const InputDecoration(labelText: 'Nom'),
               ),
-              SizedBox(height: 16.0),
+              const SizedBox(height: 16.0),
               TextField(
                 controller: amountController,
-                decoration: InputDecoration(labelText: 'Initial Amount'),
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Montant initial'),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
-              SizedBox(height: 32.0),
+              const SizedBox(height: 32.0),
               ElevatedButton(
                 onPressed: () => saveData(context),
-                child: Text('Start', style: spotifyTheme.textTheme.subtitle1),
+                child: Text("C'est parti", style: theme.textTheme.subtitle1),
               ),
             ],
           ),

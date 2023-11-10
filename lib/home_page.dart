@@ -22,11 +22,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   int _selectedIndex = 0;
   double balance = 0.0;
   final TextEditingController _amountController = TextEditingController();
-  final String apiKey = 'EZDQ7J9K887K78PJ'; //1TO1GFCDP5UW238V    EZDQ7J9K887K78PJ  IE4H61S0VOHDBQJ7
+  final String apiKey = 'EZDQ7J9K887K78PJ';
   late AnimationController _animationController;
   late Animation<double> _animation;
-  String selectedPeriod = '1W'; // Valeur par défaut pour la période
-  String selectedSymbol = 'AI.PA'; // Valeur par défaut pour l'action
+  String selectedPeriod = '1W';
+  String selectedSymbol = 'AI.PA';
+
 
   List<CandleData> candleData = [];
 
@@ -123,73 +124,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         }
       }
     }
-
     await prefs.setString('allTimeSeriesData', json.encode(allTimeSeriesData));
     await prefs.setString('lastFetchDate', today);
   }
 
 
-  void _buyStock(String symbol, double price) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final TextEditingController quantityController =
-            TextEditingController();
-        return AlertDialog(
-          title: const Text('Acheter des actions'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Prix par action: \$${price.toStringAsFixed(2)}'),
-              TextField(
-                controller: quantityController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Quantité'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                final quantity = int.tryParse(quantityController.text);
-                if (quantity != null && quantity > 0) {
-                  final totalCost = price * quantity;
-                  if (balance >= totalCost) {
-                    _updateBalance(totalCost,
-                        false); // Soustraire de l'argent pour l'achat d'actions
-                    _updatePurchasedStocks(
-                        symbol, quantity, price); //  ajout de l'argument prix
-                    Navigator.of(context).pop();
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Solde insuffisant.')),
-                    );
-                  }
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Veuillez entrer une quantité valide.')),
-                  );
-                }
-              },
-              child: const Text('Acheter'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Annuler'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+
 
 
   List<Widget> _widgetOptions(BuildContext context) {
     return <Widget>[
       StockListView(stockPrices: stockPrices, symbolToName: symbolToName, buyStock: _buyStock),
       PurchasedStockListView(purchasedStocks: purchasedStocks, stockPrices: stockPrices, symbolToName: symbolToName,onSellStock: _sellStock),
-      AddFundsWidget(amountController: _amountController, updateBalance: _updateBalance),
+      AddFundsWidget(amountController: _amountController, updateBalance: _updateBalance, stockPrices: stockPrices),
       CandleChart(symbolToName: symbolToName),
     ];
   }
@@ -205,7 +152,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return HomePageWidget(
+    return FooterWidget(
       balance: balance,
       selectedIndex: _selectedIndex,
       widgetOptions: _widgetOptions(context),
@@ -220,11 +167,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       builder: (context) {
         final TextEditingController quantityController = TextEditingController();
         return AlertDialog(
-          title: Text('Vendre des actions de $symbol'),
+          title: Text('Vendre des actions de ${symbolToName[symbol]}'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Prix actuel par action: \$${currentPrice.toStringAsFixed(2)}'),
+              Text('Prix actuel de cette action: \$${currentPrice.toStringAsFixed(2)}'),
               TextField(
                 controller: quantityController,
                 keyboardType: TextInputType.number,
@@ -255,6 +202,61 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 }
               },
               child: const Text('Vendre'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Annuler'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _buyStock(String symbol, double price) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final TextEditingController quantityController =
+        TextEditingController();
+        return AlertDialog(
+          title: Text('Acheter des actions de ${symbolToName[symbol]}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Prix de cette action: \$${price.toStringAsFixed(2)}'),
+              TextField(
+                controller: quantityController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Quantité'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                final quantity = int.tryParse(quantityController.text);
+                if (quantity != null && quantity > 0) {
+                  final totalCost = price * quantity;
+                  if (balance >= totalCost) {
+                    _updateBalance(totalCost,
+                        false);
+                    _updatePurchasedStocks(
+                        symbol, quantity, price);
+                    Navigator.of(context).pop();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Solde insuffisant.')),
+                    );
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Veuillez entrer une quantité valide.')),
+                  );
+                }
+              },
+              child: const Text('Acheter'),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -308,5 +310,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       prefs.setString('purchased_stocks', json.encode(purchasedStocks));
     });
   }
+
+
+
 
 }

@@ -18,7 +18,7 @@ class CandleChart extends StatefulWidget {
 }
 
 class _CandleChartState extends State<CandleChart> {
-  String selectedPeriod = '1W';
+  String selectedPeriod = '1 Jour';
   String selectedSymbol = 'AI.PA';
   List<CandleData> candleData = [];
 
@@ -36,26 +36,27 @@ class _CandleChartState extends State<CandleChart> {
       final data = dataTest[selectedSymbol];
       final endDate = DateTime.now();
       DateTime startDate = endDate;
+
       switch (selectedPeriod) {
-        case '1D':
+        case '1 Jour':
           startDate = endDate.subtract(const Duration(days: 2));
           break;
-        case '1W':
+        case '1 Semaine':
           startDate = endDate.subtract(const Duration(days: 8));
           break;
-        case '1M':
+        case '1 Mois':
           startDate = DateTime(endDate.year, endDate.month - 1, endDate.day);
           break;
-        case '3M':
+        case '3 Mois':
           startDate = DateTime(endDate.year, endDate.month - 3, endDate.day);
           break;
-        case '6M':
+        case '6 Mois':
           startDate = DateTime(endDate.year, endDate.month - 6, endDate.day);
           break;
-        case '1Y':
+        case '1 An':
           startDate = DateTime(endDate.year - 1, endDate.month, endDate.day);
           break;
-        case '3Y':
+        case '3 Ans':
           startDate = DateTime(endDate.year - 3, endDate.month, endDate.day);
           break;
       }
@@ -81,8 +82,15 @@ class _CandleChartState extends State<CandleChart> {
   Widget _buildPeriodSelector() {
     return DropdownButton<String>(
       value: selectedPeriod,
-      items: <String>['1D', '1W', '1M', '3M', '6M', '1Y', '3Y']
-          .map<DropdownMenuItem<String>>((String value) {
+      items: <String>[
+        '1 Jour',
+        '1 Semaine',
+        '1 Mois',
+        '3 Mois',
+        '6 Mois',
+        '1 An',
+        '3 Ans',
+      ].map<DropdownMenuItem<String>>((String value) {
         return DropdownMenuItem<String>(
           value: value,
           child: Text(value, style: const TextStyle(color: Colors.white)),
@@ -90,18 +98,14 @@ class _CandleChartState extends State<CandleChart> {
       }).toList(),
       onChanged: (String? newValue) {
         if (newValue != null) {
-          _onPeriodChanged(newValue);
+          setState(() {
+            selectedPeriod = newValue;
+          });
+          _loadChartData();
         }
       },
       dropdownColor: Colors.black,
     );
-  }
-
-  void _onPeriodChanged(String newPeriod) {
-    setState(() {
-      selectedPeriod = newPeriod;
-    });
-    _loadChartData();
   }
 
   Widget _buildSymbolSelector() {
@@ -116,18 +120,14 @@ class _CandleChartState extends State<CandleChart> {
       }).toList(),
       onChanged: (String? newValue) {
         if (newValue != null) {
-          _onSymbolChanged(newValue);
+          setState(() {
+            selectedSymbol = newValue;
+          });
+          _loadChartData();
         }
       },
       dropdownColor: Colors.black,
     );
-  }
-
-  void _onSymbolChanged(String newSymbol) {
-    setState(() {
-      selectedSymbol = newSymbol;
-    });
-    _loadChartData();
   }
 
   @override
