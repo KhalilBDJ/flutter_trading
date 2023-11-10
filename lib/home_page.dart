@@ -4,6 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:syncfusion_flutter_charts/charts.dart';
+import 'Widgets/AddFundsWidget.dart';
+import 'Widgets/CandleChart.dart';
+import 'Widgets/PurchasedStockListView.dart';
+import 'Widgets/StockListView.dart';
 import 'classes/CandleData.dart';
 
 class HomePage extends StatefulWidget {
@@ -20,7 +24,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   final String apiKey = 'EZDQ7J9K887K78PJ'; //1TO1GFCDP5UW238V    EZDQ7J9K887K78PJ  IE4H61S0VOHDBQJ7
   late AnimationController _animationController;
   late Animation<double> _animation;
-  String selectedTimeRange = '1W'; // Par défaut une semaine
   String selectedPeriod = '1W'; // Valeur par défaut pour la période
   String selectedSymbol = 'AI.PA'; // Valeur par défaut pour l'action
 
@@ -34,8 +37,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     'MT.AS': 'ARCELORMITTAL SA',
     'CS.PA': 'AXA',
   };
-  Map<String, Map<String, dynamic>> purchasedStocks = {}; // Ligne modifiée
-
+  Map<String, Map<String, dynamic>> purchasedStocks = {};
   @override
   void initState() {
     super.initState();
@@ -122,75 +124,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
 
-  Widget _buildCandleChart() {
-    return Column(
-      children: [
-        // Menus déroulants pour la sélection de la période et de l'action
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildPeriodSelector(), // Sélecteur de période
-              _buildSymbolSelector(), // Sélecteur d'action
-            ],
-          ),
-        ),
-        // Graphique en chandeliers
-        Expanded(
-          child: SfCartesianChart(
-            series: <CandleSeries>[
-              CandleSeries<CandleData, DateTime>(
-                dataSource: candleData,
-                xValueMapper: (CandleData data, _) => data.date,
-                lowValueMapper: (CandleData data, _) => data.low,
-                highValueMapper: (CandleData data, _) => data.high,
-                openValueMapper: (CandleData data, _) => data.open,
-                closeValueMapper: (CandleData data, _) => data.close,
-              ),
-            ],
-            primaryXAxis: DateTimeAxis(
-              edgeLabelPlacement: EdgeLabelPlacement.shift,
-              intervalType: DateTimeIntervalType.auto,
-              majorGridLines: const MajorGridLines(width: 0),
-            ),
-            primaryYAxis: NumericAxis(
-              numberFormat: NumberFormat.simpleCurrency(decimalDigits: 2),
-            ),
-            trackballBehavior: TrackballBehavior(
-              enable: true,
-              activationMode: ActivationMode.singleTap,
-              lineType: TrackballLineType.vertical,
-              tooltipSettings: InteractiveTooltip(
-                enable: true,
-              ),
-            ),
-            // Ajouter d'autres configurations selon les besoins
-          ),
-        ),
-      ],
-    );
-  }
-
-
-  /*Widget _buildTimeRangeSelector() {
-    return DropdownButton<String>(
-      value: selectedTimeRange,
-      items: <String>['1D', '1W', '1M', '3M', '6M', '1Y', '3Y']
-          .map<DropdownMenuItem<String>>((String value) {
-        return DropdownMenuItem<String>(
-          value: value,
-          child: Text(value),
-        );
-      }).toList(),
-      onChanged: (String? newValue) {
-        setState(() {
-          selectedTimeRange = newValue!;
-          _loadChartData();
-        });
-      },
-    );
-  }*/
 
   Future<void> _loadInitialData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -245,45 +178,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
     await prefs.setString('allTimeSeriesData', json.encode(allTimeSeriesData));
     await prefs.setString('lastFetchDate', today);
-  }
-
-
-  Widget _buildPeriodSelector() {
-    return DropdownButton<String>(
-      value: selectedPeriod,
-      items: <String>['1D', '1W', '1M', '3M', '6M', '1Y', '3Y']
-          .map<DropdownMenuItem<String>>((String value) {
-        return DropdownMenuItem<String>(
-          value: value,
-          child: Text(value),
-        );
-      }).toList(),
-      onChanged: (String? newValue) {
-        setState(() {
-          selectedPeriod = newValue!;
-          _loadChartData(selectedSymbol, selectedPeriod);
-        });
-      },
-    );
-  }
-
-  Widget _buildSymbolSelector() {
-    return DropdownButton<String>(
-      value: selectedSymbol,
-      items: symbolToName.keys
-          .map<DropdownMenuItem<String>>((String value) {
-        return DropdownMenuItem<String>(
-          value: value,
-          child: Text(symbolToName[value] ?? value),
-        );
-      }).toList(),
-      onChanged: (String? newValue) {
-        setState(() {
-          selectedSymbol = newValue!;
-          _loadChartData(selectedSymbol, selectedPeriod);
-        });
-      },
-    );
   }
 
 
@@ -360,112 +254,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   List<Widget> _widgetOptions(BuildContext context) {
     return <Widget>[
-      stockPrices.isEmpty
-          ? const CircularProgressIndicator()
-          : ListView.builder(
-              itemCount: stockPrices.length,
-              itemBuilder: (context, index) {
-                final symbol = stockPrices.keys.elementAt(index);
-                final price = stockPrices[symbol];
-                final companyName = symbolToName[symbol] ?? symbol;
-                return ListTile(
-                  title: Text(companyName),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('\$${price?.toStringAsFixed(2)}'),
-                      IconButton(
-                        icon: const Icon(Icons.shopping_cart),
-                        onPressed: () => _buyStock(symbol, price!),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-      purchasedStocks.isEmpty
-          ? const Text('Aucune action achetée.', style: TextStyle(color: Colors.green))
-          : ListView.builder(
-              itemCount: purchasedStocks.length,
-              itemBuilder: (context, index) {
-                final symbol = purchasedStocks.keys.elementAt(index);
-                final stockInfo = purchasedStocks[symbol];
-                final currentPrice = stockPrices[symbol];
-
-                if (stockInfo != null && currentPrice != null) {
-                  final quantity = stockInfo['quantity'];
-                  final purchasePrice = stockInfo['purchasePrice'];
-                  final priceDifference =
-                      (currentPrice - purchasePrice) * quantity;
-                  final priceDifferenceString = priceDifference > 0
-                      ? '+${priceDifference.toStringAsFixed(2)}'
-                      : priceDifference.toStringAsFixed(2);
-                  final color = priceDifference >= 0 ? Colors.green : Colors.red;
-                  final companyName = symbolToName[symbol] ?? symbol;
-
-                  return ListTile(
-                    title: Text('$companyName ($quantity)'),
-                    trailing: Text(
-                      '(\$${currentPrice.toStringAsFixed(2)}) ($priceDifferenceString)',
-                      style: TextStyle(color: color),
-                    ),
-                  );
-                } else {
-                  return const ListTile(
-                    title: Text('Information non disponible'),
-                  );
-                }
-              },
-            ),
-
-      //const Text('Cours des actions achetées'),
-      Column(
-        children: [
-          TextField(
-            controller: _amountController,
-            keyboardType: TextInputType.number,
-            style: TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
-              labelText: 'Montant à ajouter',
-              labelStyle: TextStyle(color: Colors.green), // Pour rendre le texte en vert
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.white), // Pour rendre la ligne en dessous blanche
-              ),
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.white), // Pour rendre la ligne en dessous blanche lors de la mise au point
-              ),
-            ),
-          ),
-          const SizedBox(height: 10.0),  // Pour espacer le bouton un peu plus bas
-          ElevatedButton(
-            onPressed: () {
-              final amount = double.tryParse(_amountController.text);
-              if (amount != null && amount > 0) {
-                _updateBalance(amount, true); // Ajouter de l'argent
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Montant ajouté : $amount')),
-                );
-                _amountController.clear();
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Veuillez entrer un montant valide.')),
-                );
-              }
-            },
-            child: const Text('Ajouter'),
-          ),
-
-        ],
-      ),
-      /*Expanded(
-        child: _buildCandleChart(),
-      ),*/
-      _buildCandleChart()
-      //_buildTimeRangeSelector(),
-
+      StockListView(stockPrices: stockPrices, symbolToName: symbolToName, buyStock: _buyStock),
+      PurchasedStockListView(purchasedStocks: purchasedStocks, stockPrices: stockPrices, symbolToName: symbolToName),
+      AddFundsWidget(amountController: _amountController, updateBalance: _updateBalance),
+      CandleChart(candleData: candleData, onPeriodChanged: _onPeriodChanged, onSymbolChanged: _onSymbolChanged, selectedPeriod: selectedPeriod, selectedSymbol: selectedSymbol, symbolToName: symbolToName),
     ];
   }
+
 
   void _onItemTapped(int index) {
     setState(() {
@@ -556,5 +351,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ),
       ),
     );
+  }
+
+
+  void _onPeriodChanged(String newPeriod) {
+    setState(() {
+      selectedPeriod = newPeriod;
+      _loadChartData(selectedSymbol, selectedPeriod);
+    });
+  }
+
+  void _onSymbolChanged(String newSymbol) {
+    setState(() {
+      selectedSymbol = newSymbol;
+      _loadChartData(selectedSymbol, selectedPeriod);
+    });
   }
 }
