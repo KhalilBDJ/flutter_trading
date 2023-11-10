@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'Widgets/AddFundsWidget.dart';
 import 'Widgets/CandleChart.dart';
+import 'Widgets/Footers.dart';
 import 'Widgets/PurchasedStockListView.dart';
 import 'Widgets/StockListView.dart';
 import 'classes/CandleData.dart';
@@ -237,7 +238,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   void _updatePurchasedStocks(String symbol, int quantity, double price) {
-    // Méthode ajoutée/modifiée
     setState(() {
       final existingQuantity = (purchasedStocks[symbol] != null)
           ? purchasedStocks[symbol]!['quantity']
@@ -274,7 +274,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
     _animation = Tween<double>(begin: startBalance, end: endBalance).animate(_animationController);
 
-    _animationController.reset(); // Reset l'animation avant de la démarrer
+    _animationController.reset();
     _animationController.forward();
 
     SharedPreferences.getInstance().then((prefs) {
@@ -284,75 +284,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.grey[900],
-        title: const Text('Tradet', style: TextStyle(color: Colors.green)),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Text(
-              'Solde actuel: \$${balance.toStringAsFixed(2)}',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: _widgetOptions(context).elementAt(_selectedIndex),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.grey[900],
-        items: <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.home),
-            label: 'Accueil',
-            backgroundColor: _selectedIndex == 0 ? Colors.grey : Colors.black,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.show_chart),
-            label: 'Bourse',
-            backgroundColor: _selectedIndex == 1 ? Colors.grey : Colors.black,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.person),
-            label: 'Profil',
-            backgroundColor: _selectedIndex == 2 ? Colors.grey : Colors.black,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.settings),
-            label: 'Réglages',
-            backgroundColor: _selectedIndex == 3 ? Colors.grey : Colors.black,
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.green[300],
-        unselectedItemColor: Colors.green[700],
-        onTap: _onItemTapped,
-        selectedIconTheme: IconThemeData(
-          color: Colors.green[300],
-        ),
-        unselectedIconTheme: IconThemeData(
-          color: Colors.green[700],
-        ),
-        selectedLabelStyle: TextStyle(
-          color: Colors.green[300],
-        ),
-        unselectedLabelStyle: TextStyle(
-          color: Colors.green[700],
-        ),
-      ),
+    return HomePageWidget(
+      balance: balance,
+      selectedIndex: _selectedIndex,
+      widgetOptions: _widgetOptions(context),
+      onItemTapped: _onItemTapped,
     );
   }
-
 
   void _onPeriodChanged(String newPeriod) {
     setState(() {
