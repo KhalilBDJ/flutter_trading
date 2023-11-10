@@ -45,7 +45,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _loadInitialData();
     _fetchStockPrices();
     _loadPurchasedStocks();
-    _loadChartData('AI.PA', '1M');
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1000), // Durée de l'animation
@@ -73,58 +72,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           json.decode(data));
     }
   }
-
-  Future<void> _loadChartData(String selectedSymbol, String selectedPeriod) async {
-    final prefs = await SharedPreferences.getInstance();
-    final allData = prefs.getString('allTimeSeriesData');
-    if (allData != null) {
-      final dataTest = json.decode(allData);//[selectedSymbol];
-      final data = dataTest[selectedSymbol];
-      final endDate = DateTime.now();
-      DateTime startDate = endDate;
-      switch (selectedPeriod) {
-        case '1D':
-          startDate = endDate.subtract(const Duration(days: 2));
-          break;
-        case '1W':
-          startDate = endDate.subtract(const Duration(days: 8));
-          break;
-        case '1M':
-          startDate = DateTime(endDate.year, endDate.month - 1, endDate.day);
-          break;
-        case '3M':
-          startDate = DateTime(endDate.year, endDate.month - 3, endDate.day);
-          break;
-        case '6M':
-          startDate = DateTime(endDate.year, endDate.month - 6, endDate.day);
-          break;
-        case '1Y':
-          startDate = DateTime(endDate.year - 1, endDate.month, endDate.day);
-          break;
-        case '3Y':
-          startDate = DateTime(endDate.year - 3, endDate.month, endDate.day);
-          break;
-      }
-
-      List<CandleData> chartData = [];
-      data.forEach((dateString, value) {
-        final date = DateTime.parse(dateString);
-        if (date.isAfter(startDate) && date.isBefore(endDate)) {
-          final open = double.parse(value['1. open']);
-          final high = double.parse(value['2. high']);
-          final low = double.parse(value['3. low']);
-          final close = double.parse(value['4. close']);
-          chartData.add(CandleData(date, open, high, low, close));
-        }
-      });
-
-      setState(() {
-        candleData = chartData;
-      });
-    }
-  }
-
-
 
   Future<void> _loadInitialData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -243,7 +190,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       StockListView(stockPrices: stockPrices, symbolToName: symbolToName, buyStock: _buyStock),
       PurchasedStockListView(purchasedStocks: purchasedStocks, stockPrices: stockPrices, symbolToName: symbolToName,onSellStock: _sellStock),
       AddFundsWidget(amountController: _amountController, updateBalance: _updateBalance),
-      CandleChart(candleData: candleData, onPeriodChanged: _onPeriodChanged, onSymbolChanged: _onSymbolChanged, selectedPeriod: selectedPeriod, selectedSymbol: selectedSymbol, symbolToName: symbolToName),
+      CandleChart(symbolToName: symbolToName),
     ];
   }
 
@@ -266,19 +213,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  void _onPeriodChanged(String newPeriod) {
-    setState(() {
-      selectedPeriod = newPeriod;
-      _loadChartData(selectedSymbol, selectedPeriod);
-    });
-  }
-
-  void _onSymbolChanged(String newSymbol) {
-    setState(() {
-      selectedSymbol = newSymbol;
-      _loadChartData(selectedSymbol, selectedPeriod);
-    });
-  }
 
   void _sellStock(String symbol, double currentPrice) {
     showDialog(

@@ -4,7 +4,7 @@ class AddFundsWidget extends StatelessWidget {
   final TextEditingController amountController;
   final Function(double, bool) updateBalance;
 
-  AddFundsWidget({Key? key, required this.amountController, required this.updateBalance}) : super(key: key);
+  const AddFundsWidget({Key? key, required this.amountController, required this.updateBalance}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
