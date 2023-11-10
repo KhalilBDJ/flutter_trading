@@ -30,11 +30,19 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  fl_chart: ^0.63.0
+  flutter_credit_card: ^3.0.7
+  sqflite:
+  shared_preferences:
+  http: ^1.1.0
+  syncfusion_flutter_charts:
+  intl:
 
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
+  provider: ^6.0.5
 
 dev_dependencies:
   flutter_test:
