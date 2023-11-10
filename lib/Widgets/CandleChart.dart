@@ -28,7 +28,7 @@ class CandleChart extends StatelessWidget {
           .map<DropdownMenuItem<String>>((String value) {
         return DropdownMenuItem<String>(
           value: value,
-          child: Text(value),
+          child: Text(value, style: const TextStyle(color: Colors.white)),
         );
       }).toList(),
       onChanged: (String? newValue) {
@@ -36,6 +36,7 @@ class CandleChart extends StatelessWidget {
           onPeriodChanged(newValue);
         }
       },
+      dropdownColor: Colors.black,
     );
   }
 
@@ -46,7 +47,7 @@ class CandleChart extends StatelessWidget {
           .map<DropdownMenuItem<String>>((String value) {
         return DropdownMenuItem<String>(
           value: value,
-          child: Text(symbolToName[value] ?? value),
+          child: Text(symbolToName[value] ?? value, style: const TextStyle(color: Colors.white)),
         );
       }).toList(),
       onChanged: (String? newValue) {
@@ -54,6 +55,7 @@ class CandleChart extends StatelessWidget {
           onSymbolChanged(newValue);
         }
       },
+      dropdownColor: Colors.black,
     );
   }
 
@@ -81,15 +83,18 @@ class CandleChart extends StatelessWidget {
                 highValueMapper: (CandleData data, _) => data.high,
                 openValueMapper: (CandleData data, _) => data.open,
                 closeValueMapper: (CandleData data, _) => data.close,
+                borderWidth: 2,
               ),
             ],
             primaryXAxis: DateTimeAxis(
               edgeLabelPlacement: EdgeLabelPlacement.shift,
               intervalType: DateTimeIntervalType.auto,
               majorGridLines: const MajorGridLines(width: 0),
+              labelStyle: TextStyle(color: Colors.white),
             ),
             primaryYAxis: NumericAxis(
               numberFormat: NumberFormat.simpleCurrency(decimalDigits: 2),
+              labelStyle: TextStyle(color: Colors.white),
             ),
             trackballBehavior: TrackballBehavior(
               enable: true,
@@ -97,6 +102,7 @@ class CandleChart extends StatelessWidget {
               lineType: TrackballLineType.vertical,
               tooltipSettings: const InteractiveTooltip(
                 enable: true,
+                textStyle: TextStyle(color: Colors.white),
               ),
             ),
           ),

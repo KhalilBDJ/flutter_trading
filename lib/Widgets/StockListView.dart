@@ -18,13 +18,13 @@ class StockListView extends StatelessWidget {
         final price = stockPrices[symbol];
         final companyName = symbolToName[symbol] ?? symbol;
         return ListTile(
-          title: Text(companyName),
+          title: Text(companyName, style: const TextStyle(color: Colors.white)),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('\$${price?.toStringAsFixed(2)}'),
+              Text('\$${price?.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white)),
               IconButton(
-                icon: const Icon(Icons.shopping_cart),
+                icon: const Icon(Icons.shopping_cart, color: Colors.green),
                 onPressed: () => buyStock(symbol, price!),
               ),
             ],

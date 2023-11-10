@@ -70,7 +70,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final data = prefs.getString('purchased_stocks');
     if (data != null) {
       purchasedStocks = Map<String, Map<String, dynamic>>.from(
-          json.decode(data)); // Ligne modifiée
+          json.decode(data));
     }
   }
 
@@ -237,25 +237,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  void _updatePurchasedStocks(String symbol, int quantity, double price) {
-    setState(() {
-      final existingQuantity = (purchasedStocks[symbol] != null)
-          ? purchasedStocks[symbol]!['quantity']
-          : 0;
-      purchasedStocks[symbol] = {
-        'quantity': existingQuantity + quantity,
-        'purchasePrice': price,
-      };
-    });
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setString('purchased_stocks', json.encode(purchasedStocks));
-    });
-  }
 
   List<Widget> _widgetOptions(BuildContext context) {
     return <Widget>[
       StockListView(stockPrices: stockPrices, symbolToName: symbolToName, buyStock: _buyStock),
-      PurchasedStockListView(purchasedStocks: purchasedStocks, stockPrices: stockPrices, symbolToName: symbolToName),
+      PurchasedStockListView(purchasedStocks: purchasedStocks, stockPrices: stockPrices, symbolToName: symbolToName,onSellStock: _sellStock),
       AddFundsWidget(amountController: _amountController, updateBalance: _updateBalance),
       CandleChart(candleData: candleData, onPeriodChanged: _onPeriodChanged, onSymbolChanged: _onSymbolChanged, selectedPeriod: selectedPeriod, selectedSymbol: selectedSymbol, symbolToName: symbolToName),
     ];
@@ -268,19 +254,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     });
   }
 
-  void _updateBalance(double amount, bool isAdding) {
-    final startBalance = balance;
-    final endBalance = isAdding ? balance + amount : balance - amount;
 
-    _animation = Tween<double>(begin: startBalance, end: endBalance).animate(_animationController);
-
-    _animationController.reset();
-    _animationController.forward();
-
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setDouble('amount', endBalance);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -305,4 +279,100 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       _loadChartData(selectedSymbol, selectedPeriod);
     });
   }
+
+  void _sellStock(String symbol, double currentPrice) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final TextEditingController quantityController = TextEditingController();
+        return AlertDialog(
+          title: Text('Vendre des actions de $symbol'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Prix actuel par action: \$${currentPrice.toStringAsFixed(2)}'),
+              TextField(
+                controller: quantityController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Quantité à vendre'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                final quantityToSell = int.tryParse(quantityController.text);
+                if (quantityToSell != null && quantityToSell > 0 && purchasedStocks[symbol] != null) {
+                  final existingQuantity = purchasedStocks[symbol]!['quantity'];
+                  if (quantityToSell <= existingQuantity) {
+                    final profit = stockPrices[symbol]! * quantityToSell;
+                    _updateBalance(profit, true);
+                    _updatePurchasedStocksAfterSale(symbol, quantityToSell);
+                    Navigator.of(context).pop();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Quantité de vente invalide.')),
+                    );
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Veuillez entrer une quantité valide.')),
+                  );
+                }
+              },
+              child: const Text('Vendre'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Annuler'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _updateBalance(double amount, bool isAdding) {
+    final startBalance = balance;
+    final endBalance = isAdding ? balance + amount : balance - amount;
+
+    _animation = Tween<double>(begin: startBalance, end: endBalance).animate(_animationController);
+
+    _animationController.reset();
+    _animationController.forward();
+
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setDouble('amount', endBalance);
+    });
+  }
+
+  void _updatePurchasedStocksAfterSale(String symbol, int quantitySold) {
+    setState(() {
+      final existingQuantity = purchasedStocks[symbol]!['quantity'];
+      if (existingQuantity - quantitySold > 0) {
+        purchasedStocks[symbol]!['quantity'] -= quantitySold;
+      } else {
+        purchasedStocks.remove(symbol);
+      }
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString('purchased_stocks', json.encode(purchasedStocks));
+    });
+  }
+
+  void _updatePurchasedStocks(String symbol, int quantity, double price) {
+    setState(() {
+      final existingQuantity = (purchasedStocks[symbol] != null)
+          ? purchasedStocks[symbol]!['quantity']
+          : 0;
+      purchasedStocks[symbol] = {
+        'quantity': existingQuantity + quantity,
+        'purchasePrice': price,
+      };
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString('purchased_stocks', json.encode(purchasedStocks));
+    });
+  }
+
 }
