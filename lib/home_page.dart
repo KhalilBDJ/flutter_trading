@@ -16,7 +16,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   int _selectedIndex = 0;
   double balance = 0.0;
   final TextEditingController _amountController = TextEditingController();
-  final String apiKey = 'IE4H61S0VOHDBQJ7'; //1TO1GFCDP5UW238V
+  final String apiKey = 'EZDQ7J9K887K78PJ'; //1TO1GFCDP5UW238V    EZDQ7J9K887K78PJ  IE4H61S0VOHDBQJ7
   late AnimationController _animationController;
   late Animation<double> _animation;
   String selectedTimeRange = '1W'; // Par défaut une semaine
@@ -185,7 +185,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
     for (String symbol in symbolToName.keys) {
       final response = await http.get(
-        Uri.parse('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=$symbol&apiKey=$apiKey'),
+        Uri.parse('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=$symbol&apikey=$apiKey'),
       );
 
       if (response.statusCode == 200) {
