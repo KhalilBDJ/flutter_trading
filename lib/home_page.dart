@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -20,6 +21,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
   String selectedTimeRange = '1W'; // Par défaut une semaine
+  String selectedPeriod = '1W'; // Valeur par défaut pour la période
+  String selectedSymbol = 'AI.PA'; // Valeur par défaut pour l'action
+
   List<CandleData> candleData = [];
 
   Map<String, double> stockPrices = {};
@@ -38,7 +42,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _loadInitialData();
     _fetchStockPrices();
     _loadPurchasedStocks();
-    _loadChartData('1D', 'AI.PA');
+    _loadChartData('AI.PA', '1M');
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1000), // Durée de l'animation
@@ -71,15 +75,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final prefs = await SharedPreferences.getInstance();
     final allData = prefs.getString('allTimeSeriesData');
     if (allData != null) {
-      final data = json.decode(allData)[selectedSymbol];
+      final dataTest = json.decode(allData);//[selectedSymbol];
+      final data = dataTest[selectedSymbol];
       final endDate = DateTime.now();
       DateTime startDate = endDate;
       switch (selectedPeriod) {
         case '1D':
-          startDate = endDate.subtract(Duration(days: 1));
+          startDate = endDate.subtract(const Duration(days: 2));
           break;
         case '1W':
-          startDate = endDate.subtract(Duration(days: 7));
+          startDate = endDate.subtract(const Duration(days: 8));
           break;
         case '1M':
           startDate = DateTime(endDate.year, endDate.month - 1, endDate.day);
@@ -116,22 +121,57 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
-  SfCartesianChart _buildCandleChart() {
-    return SfCartesianChart(
-      series: <CandleSeries>[
-        CandleSeries<CandleData, DateTime>(
-          dataSource: candleData,
-          xValueMapper: (CandleData data, _) => data.date,
-          lowValueMapper: (CandleData data, _) => data.low,
-          highValueMapper: (CandleData data, _) => data.high,
-          openValueMapper: (CandleData data, _) => data.open,
-          closeValueMapper: (CandleData data, _) => data.close,
+
+  Widget _buildCandleChart() {
+    return Column(
+      children: [
+        // Menus déroulants pour la sélection de la période et de l'action
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildPeriodSelector(), // Sélecteur de période
+              _buildSymbolSelector(), // Sélecteur d'action
+            ],
+          ),
+        ),
+        // Graphique en chandeliers
+        Expanded(
+          child: SfCartesianChart(
+            series: <CandleSeries>[
+              CandleSeries<CandleData, DateTime>(
+                dataSource: candleData,
+                xValueMapper: (CandleData data, _) => data.date,
+                lowValueMapper: (CandleData data, _) => data.low,
+                highValueMapper: (CandleData data, _) => data.high,
+                openValueMapper: (CandleData data, _) => data.open,
+                closeValueMapper: (CandleData data, _) => data.close,
+              ),
+            ],
+            primaryXAxis: DateTimeAxis(
+              edgeLabelPlacement: EdgeLabelPlacement.shift,
+              intervalType: DateTimeIntervalType.auto,
+              majorGridLines: const MajorGridLines(width: 0),
+            ),
+            primaryYAxis: NumericAxis(
+              numberFormat: NumberFormat.simpleCurrency(decimalDigits: 2),
+            ),
+            trackballBehavior: TrackballBehavior(
+              enable: true,
+              activationMode: ActivationMode.singleTap,
+              lineType: TrackballLineType.vertical,
+              tooltipSettings: InteractiveTooltip(
+                enable: true,
+              ),
+            ),
+            // Ajouter d'autres configurations selon les besoins
+          ),
         ),
       ],
-      primaryXAxis: DateTimeAxis(),
-      // ... [Autres configurations du graphique si nécessaire]
     );
   }
+
 
   /*Widget _buildTimeRangeSelector() {
     return DropdownButton<String>(
@@ -208,6 +248,43 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
 
+  Widget _buildPeriodSelector() {
+    return DropdownButton<String>(
+      value: selectedPeriod,
+      items: <String>['1D', '1W', '1M', '3M', '6M', '1Y', '3Y']
+          .map<DropdownMenuItem<String>>((String value) {
+        return DropdownMenuItem<String>(
+          value: value,
+          child: Text(value),
+        );
+      }).toList(),
+      onChanged: (String? newValue) {
+        setState(() {
+          selectedPeriod = newValue!;
+          _loadChartData(selectedSymbol, selectedPeriod);
+        });
+      },
+    );
+  }
+
+  Widget _buildSymbolSelector() {
+    return DropdownButton<String>(
+      value: selectedSymbol,
+      items: symbolToName.keys
+          .map<DropdownMenuItem<String>>((String value) {
+        return DropdownMenuItem<String>(
+          value: value,
+          child: Text(symbolToName[value] ?? value),
+        );
+      }).toList(),
+      onChanged: (String? newValue) {
+        setState(() {
+          selectedSymbol = newValue!;
+          _loadChartData(selectedSymbol, selectedPeriod);
+        });
+      },
+    );
+  }
 
 
   void _buyStock(String symbol, double price) {
@@ -378,12 +455,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             },
             child: const Text('Ajouter'),
           ),
+
         ],
       ),
-      //_buildTimeRangeSelector(),
-      Expanded(
+      /*Expanded(
         child: _buildCandleChart(),
-      ),
+      ),*/
+      _buildCandleChart()
+      //_buildTimeRangeSelector(),
+
     ];
   }
 
