@@ -161,11 +161,11 @@ class _CandleChartState extends State<CandleChart> {
               edgeLabelPlacement: EdgeLabelPlacement.shift,
               intervalType: DateTimeIntervalType.auto,
               majorGridLines: const MajorGridLines(width: 0),
-              labelStyle: TextStyle(color: Colors.white),
+              labelStyle: const TextStyle(color: Colors.white),
             ),
             primaryYAxis: NumericAxis(
               numberFormat: NumberFormat.simpleCurrency(decimalDigits: 2),
-              labelStyle: TextStyle(color: Colors.white),
+              labelStyle: const TextStyle(color: Colors.white),
             ),
             trackballBehavior: TrackballBehavior(
               enable: true,

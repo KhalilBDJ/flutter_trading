@@ -62,7 +62,7 @@ class _AddFundsWidgetState extends State<AddFundsWidget> {
         TextField(
           controller: widget.amountController,
           keyboardType: TextInputType.number,
-          style: TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white),
           decoration: const InputDecoration(
             labelText: 'Montant à ajouter',
             labelStyle: TextStyle(color: Colors.green),
@@ -86,11 +86,11 @@ class _AddFundsWidgetState extends State<AddFundsWidget> {
               widget.amountController.clear();
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Veuillez entrer un montant valide.')),
+                const SnackBar(content: Text('Veuillez entrer un montant valide.')),
               );
             }
           },
-          child: Text('Ajouter'),
+          child: const Text('Ajouter'),
         ),
       ],
     );
