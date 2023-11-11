@@ -10,6 +10,8 @@ Nous savons qu'il y a beaucoup d'optimisation à faire, notament sur les sharedP
 Ce projet a été réalisé par:
 
 BEDJAOUI Khalil
+
 DELANOE Rémi
+
 DIMROCI Anatole
 
