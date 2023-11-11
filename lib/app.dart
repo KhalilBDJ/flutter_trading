@@ -7,7 +7,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Gestion Portefeuille',
+      title: 'Wallet',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -17,15 +17,15 @@ class MyApp extends StatelessWidget {
           future: _checkInitialLaunch(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return CircularProgressIndicator();
+              return const CircularProgressIndicator();
             }
             if (snapshot.data == true) {
               return InitialPage();
             }
-            return HomePage();
+            return const HomePage();
           },
         ),
-        '/home': (context) => HomePage(),
+        '/home': (context) => const HomePage(),
       },
     );
   }
